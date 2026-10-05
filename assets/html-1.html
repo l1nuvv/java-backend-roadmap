@@ -1,0 +1,43 @@
+
+<div class="app">
+<aside class="sidebar" id="sidebar">
+  <div class="brand"><div class="eyebrow">Learning Control System v3.3</div><h1>Java Backend 2026–2027</h1><p>Intern → Junior → часть 0–3 years</p></div>
+  <div class="nav" id="nav">
+    <div class="nav-section">Обзор</div>
+    <a href="#overview"><span class="dot"></span>Dashboard</a><a href="#market"><span class="dot"></span>Рынок / версии</a>
+    <div class="nav-section">Обучение</div>
+    <a href="#glossary"><span class="dot"></span>Glossary</a><a href="#roadmap"><span class="dot"></span>Roadmap</a><a href="#parallel"><span class="dot"></span>Параллельные треки</a><a href="#project"><span class="dot"></span>Основной проект</a><a href="#resources"><span class="dot"></span>Ресурсы</a>
+    <div class="nav-section">Самостоятельность</div>
+    <a href="#noai"><span class="dot"></span>No-AI sessions</a><a href="#mistakes"><span class="dot"></span>Ошибки / log</a><a href="#interview"><span class="dot"></span>Interview drill</a><a href="#exam"><span class="dot"></span>Финальный экзамен</a>
+    <div class="nav-section">Карьера</div>
+    <a href="#applications"><span class="dot"></span>Career gates</a><a href="#career"><span class="dot"></span>Отклики / аналитика</a><a href="#coverage"><span class="dot"></span>Vacancy coverage</a><a href="#branches"><span class="dot"></span>Adaptive branches</a>
+    <div class="nav-section">Режим</div>
+    <a href="#week"><span class="dot"></span>Недельный режим</a><a href="#days14"><span class="dot"></span>Первые 14 дней</a><a href="#anti"><span class="dot"></span>Anti-roadmap</a><a href="#history"><span class="dot"></span>История</a>
+  </div>
+  <div class="sidebar-bottom"><div class="mini-progress"><span>Общий прогресс</span><strong id="sidePct">0%</strong></div><div class="bar"><span id="sideBar"></span></div></div>
+</aside>
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+<main class="main">
+<div class="topbar">
+  <button class="btn drawer-btn" id="drawerBtn" aria-label="Открыть боковое меню" title="Меню">☰</button>
+  <div class="search"><input id="searchInput" type="search" aria-label="Поиск по roadmap" placeholder="Поиск: JPA, HashMap, Docker..."></div>
+  <div class="save-state" id="saveState" aria-live="polite">—</div>
+  <div class="top-actions"><button class="btn primary" id="manualSaveBtn" data-short="SAVE" title="Явно сохранить текущее состояние">Сохранить</button><button class="btn" id="snapshotBtn" data-short="SNAP" title="Создать ручной snapshot прогресса">Snapshot</button><button class="btn" id="focusBtn" data-short="F" title="Focus mode"><span class="txt">Фокус</span></button><button class="btn" id="themeBtn" data-short="T" title="Сменить тему"><span class="txt">Тема</span></button><button class="btn" id="exportBtn" data-short="↓" title="Экспорт JSON"><span class="txt">Экспорт</span></button><button class="btn" id="importBtn" data-short="↑" title="Импорт JSON"><span class="txt">Импорт</span></button><button class="btn" data-short="PDF" title="Печать / PDF" id="printBtn"><span class="txt">PDF</span></button></div>
+</div>
+<div class="content">
+<section id="overview">
+  <div class="hero">
+    <div class="card hero-main"><span class="badge blue">v3.3 · schemaVersion 3 · snapshot 03.10.2026</span><h2>Не «изучить Java», а доказуемо научиться работать самостоятельно</h2><p>Общий прогресс = доля 13 подтверждённых checkpoints. Освоение тем/действий и Practice — самооценка, а не измерение готовности к найму. Результат подтверждается кодом, тестом и объяснением.</p><div class="stackline"><span class="badge">Java</span><span class="badge">Spring Boot</span><span class="badge">PostgreSQL</span><span class="badge">SQL</span><span class="badge">HTTP/REST</span><span class="badge">Maven</span><span class="badge">JUnit</span><span class="badge term" title="JPA — спецификация persistence API; Hibernate — популярная реализация ORM">JPA/Hibernate</span><span class="badge term" title="Инструмент версионированных миграций схемы БД">Flyway</span><span class="badge">Docker</span><span class="badge term" title="Запуск реальных зависимостей, например PostgreSQL, в контейнерах для integration tests">Testcontainers</span><span class="badge">Git/Linux/CI</span></div><div class="goal-box"><b>Правило:</b> настройка подтверждается запуском, тема — пониманием и применением, рабочее действие — самостоятельным выполнением (уровень ≥ 3), а важные этапы закрываются checkpoint-тестом и evidence.</div></div>
+    <div class="card hero-side"><div class="next-title">Ближайшее действие</div><div class="next-action" id="nextAction">—</div><div class="next-desc" id="nextDesc">—</div><div class="mode-switch"><button data-mode="minimum">7–10 ч/нед</button><button data-mode="accelerated">15–20 ч/нед</button></div><div class="next-desc" style="margin-top:9px">Осталось: <b id="remainingHours">—</b><br>Оценка, без ожидания ответов работодателей: <b id="calendarEstimate">—</b></div></div>
+  </div>
+  <div class="rule" id="storageWarning" role="alert" hidden></div><div class="stats"><div class="card stat"><div class="n" id="phaseDone">0/13</div><div class="k">Фазы</div></div><div class="card stat"><div class="n" id="knowledgePct">0%</div><div class="k" title="Темы и рабочие действия с уровнем ≥ 3. Установка инструментов сюда не входит.">Освоение</div></div><div class="card stat"><div class="n" id="practicePct">0%</div><div class="k">Practice</div></div><div class="card stat"><div class="n" id="daysDone">0/14</div><div class="k">14 дней</div></div><div class="card stat"><div class="n" id="gatesDone">0/3</div><div class="k">Career gates</div></div><div class="card stat"><div class="n" id="noAiReady">0/4</div><div class="k">No-AI milestones</div></div></div>
+  <div class="dashboard-grid">
+    <div class="card dash-card"><h3>Что сейчас мешает</h3><textarea id="blockerText" placeholder="Например: путаю ? extends и ? super"></textarea><h3 style="margin-top:9px">Следующие 15 минут</h3><textarea id="next15Text" placeholder="Например: решить 2 задачи на producer/consumer API"></textarea></div>
+    <div class="card dash-card"><h3>Today / Next session</h3><div id="todayRows"></div><button class="btn" id="addTodayBtn">+ действие</button></div>
+    <div class="card dash-card"><h3>Оставшийся объём</h3><div class="time-grid"><div class="time-chip"><b id="timeTheory">—</b><span>теория</span></div><div class="time-chip"><b id="timePractice">—</b><span>практика</span></div><div class="time-chip"><b id="timeProject">—</b><span>project</span></div><div class="time-chip"><b id="timeDsa">—</b><span>DSA</span></div><div class="time-chip"><b id="timeInterview">—</b><span>interview</span></div></div><div class="next-desc" style="margin-top:8px">До Gate A: <b id="toEarly">—</b><br>До Gate B: <b id="toJunior">—</b><br>До Gate C: <b id="toZero3">—</b></div></div>
+  </div>
+</section>
+<section id="market" class="secondary-section searchable">
+  <div class="section-head"><div><h2>Рынок и рабочие версии</h2><p>Entry-level ядро и baseline стека.</p></div><span class="badge yellow">Не гнаться за новизной ради цифры</span></div>
+  <div class="lanes"><div class="card lane"><h3>Must-have</h3><div class="pills"><span class="pill">Java Core</span><span class="pill">OOP</span><span class="pill">Collections</span><span class="pill">Generics</span><span class="pill">SQL</span><span class="pill">PostgreSQL</span><span class="pill">HTTP/REST</span><span class="pill">Spring Boot</span><span class="pill">Git</span><span class="pill">JUnit</span></div></div><div class="card lane"><h3>Часто требуется</h3><div class="pills"><span class="pill">JPA/Hibernate</span><span class="pill">Maven</span><span class="pill">Docker</span><span class="pill">Mockito</span><span class="pill">Flyway/Liquibase</span><span class="pill">CI/CD basics</span><span class="pill">JVM basics</span><span class="pill">Concurrency basics</span></div></div><div class="card lane"><h3>После старта откликов</h3><div class="pills"><span class="pill">Spring Security</span><span class="pill term" title="Базовое понимание broker/topic/partition/producer/consumer без deep dive">Kafka literacy</span><span class="pill">Kotlin reading</span><span class="pill">Redis</span><span class="pill">RabbitMQ</span><span class="pill">Kubernetes basics</span></div></div></div>
+  <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>Технология</th><th>Ориентир</th><th>Как использовать</th></tr></thead><tbody><tr><td>JDK</td><td><b>25 LTS</b></td><td>Toolchain 25 LTS; compiler release 21, без preview API. Проверять mvn test на JDK 21, если заявлена совместимость.</td></tr><tr><td>Spring Boot</td><td><b>4.1.x</b></td><td>Managed dependencies не перео
