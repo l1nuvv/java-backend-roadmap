@@ -1461,7 +1461,9 @@ export function createApplication() {
   function renderWhenChanged(render, select) {
     let previous;
     return (...args) => {
-      const next = JSON.stringify(select());
+      let next;
+      try { next = JSON.stringify(select()); }
+      catch { previous = undefined; return render(...args); }
       if (next === previous) return;
       const result = render(...args);
       previous = JSON.stringify(select());
