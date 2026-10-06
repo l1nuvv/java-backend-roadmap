@@ -53,7 +53,8 @@ const html = (await fs.readFile(path.join(root, "src/index.html"), "utf8"))
   .replaceAll("__JS__", relative(js))
   .replaceAll("__CSS__", relative(css))
   .replace(/>\s+</g, "><")
-  .replace(/\n[ \t]*/g, " ");
+  .replace(/\n[ \t]*/g, " ")
+  .trimEnd() + "\n";
 await fs.writeFile(path.join(docs, "index.html"), html);
 await fs.writeFile(path.join(docs, ".nojekyll"), "");
 // Keep one previous generation so an already cached HTML document still loads.
@@ -75,7 +76,7 @@ for (const file of await fs.readdir(assets))
 console.log(
   JSON.stringify(
     {
-      version: "3.4",
+      version: "3.5",
       htmlBytes: Buffer.byteLength(html),
       assets: files.map((f) => ({
         file: path.basename(f),

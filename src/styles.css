@@ -1518,3 +1518,14 @@ html[data-theme="light"] {
 #cloudStatus {
   white-space: pre-wrap;
 }
+
+/* Defer offscreen layout and paint while retaining native find and accessibility. */
+@supports (content-visibility: auto) {
+  section.secondary-section {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 600px;
+  }
+}
+@media print {
+  section.secondary-section { content-visibility: visible; contain-intrinsic-size: none; }
+}

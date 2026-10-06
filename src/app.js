@@ -239,14 +239,19 @@ export function createApplication() {
   function renderPhases() {
     const board = document.getElementById("phaseBoard"),
       mini = document.getElementById("miniMap");
-    board.innerHTML = "";
-    mini.innerHTML = "";
-    phases.forEach((p) => {
+    // Retain unchanged cards, controls and focus across progress updates.
+    const existing = new Map([...board.children].map(card => [card.id, card]));
+    const existingNodes = [...mini.children];
+    phases.forEach((p, phaseIndex) => {
       const eff = phaseStatusEffective(p),
         collapsed = !!state.phaseCollapsed[p.id],
         k = Math.round(phaseKnowledge(p) * 100),
         pr = Math.round(phasePractice(p) * 100);
+      const signature = JSON.stringify([eff, collapsed, state.checkpoint[p.id], state.evidence[p.id], p.topics.map((_, i) => state.mastery[p.id + ":m:" + i]), p.practice.map((_, i) => state.practice[p.id + ":p:" + i]), checkpointValid(p.id)]);
+      const oldCard = existing.get("phase-" + p.id);
+      if (oldCard?.dataset.renderSignature === signature) return;
       const card = document.createElement("article");
+      card.dataset.renderSignature = signature;
       card.id = `phase-${p.id}`;
       card.className = `phase searchable-item ${eff === "available" ? "available" : ""} ${eff === "done" ? "done" : ""} ${eff === "doing" ? "current" : ""} ${eff === "locked" ? "locked" : ""} ${eff === "failed" ? "failed" : ""} ${collapsed ? "collapsed" : ""}`;
       card.dataset.status = eff;
@@ -261,7 +266,9 @@ export function createApplication() {
         p.checkpoint
       ).toLowerCase();
       card.innerHTML = `<div class="phase-head"><div class="phase-top"><div><div class="phase-num">${p.num} · ${p.cat}</div><h3>${esc(p.title)}</h3><div class="phase-time">${hoursForPhase(p)} ч · deps: ${p.deps.length ? p.deps.join(", ") : "нет"}</div></div><div class="phase-controls"><select class="status-select" data-phase-status="${p.id}" ${eff === "locked" || eff === "done" ? "disabled" : ""}><option value="not" ${(state.phaseStatus[p.id] || "not") === "not" ? "selected" : ""}>Не начато</option><option value="doing" ${eff === "doing" ? "selected" : ""}>В процессе</option>${eff === "done" ? '<option value="done" selected>Готово</option>' : ""}</select><button class="icon-btn" data-collapse="${p.id}">${collapsed ? "＋" : "−"}</button></div></div></div><div class="phase-body">${renderTopics(p)}<div class="label-sm">Проверенная самостоятельная практика</div><p class="muted" style="font-size:11px">Отмечай после своего выполнения и проверки результата.</p>${p.practice.map((x, i) => `<label class="practice-row"><input type="checkbox" data-practice="${p.id}:p:${i}" ${state.practice[`${p.id}:p:${i}`] ? "checked" : ""}><span>${esc(x)}</span></label>`).join("")}<div class="progress-pair"><div class="tiny-progress"><div class="mini-progress"><span>${p.id === "p0" ? "Подготовка" : p.id === "p11" || p.id === "p12" ? "Действия" : "Освоение"}</span><b>${k}%</b></div><div class="bar"><span style="width:${k}%"></span></div></div><div class="tiny-progress"><div class="mini-progress"><span>Practice</span><b>${pr}%</b></div><div class="bar"><span style="width:${pr}%"></span></div></div></div><div class="checkpoint"><b>Checkpoint:</b> ${esc(p.checkpoint)}${state.checkpoint[p.id]?.passed && !checkpointValid(p.id) ? '<p class="gate-warning">Сохранённый pass требует перепроверки: tasks, evidence, mastery/practice или dependencies неполны. Исходная отметка сохранена.</p>' : ""}<div class="checkpoint-actions"><button class="btn primary" data-checkpoint="${p.id}">${state.checkpoint[p.id]?.passed ? "Пройден · открыть" : "Проверить готовность"}</button>${eff === "locked" ? `<span class="badge">Locked: ${p.deps.join(", ")}</span>` : ""}</div></div><div class="evidence"><div class="label-sm">Evidence</div><textarea data-evidence="${p.id}" placeholder="commit / PR / файл / задача / что сделал сам">${esc(state.evidence[p.id] || "")}</textarea></div><div class="ai-note">${esc(p.ai)}</div></div>`;
-      board.appendChild(card);
+      bindPhaseControls(card);
+      if (oldCard) oldCard.replaceWith(card);
+      else board.appendChild(card);
       const b = document.createElement("button");
       b.className = `mini-node ${eff}`;
       b.textContent = p.id.replace("p", "");
@@ -272,15 +279,14 @@ export function createApplication() {
           inline: "center",
           block: "nearest",
         });
-      mini.appendChild(b);
+      if (existingNodes[phaseIndex]) existingNodes[phaseIndex].replaceWith(b);
+      else mini.appendChild(b);
     });
-    bindPhaseControls();
     applyBoardFilters();
     applySearch();
     labelControls();
   }
-  function bindPhaseControls() {
-    const root = document.getElementById("phaseBoard");
+  function bindPhaseControls(root) {
     root.querySelectorAll("[data-phase-status]").forEach(
       (el) =>
         (el.onchange = (e) => {
@@ -1095,7 +1101,11 @@ export function createApplication() {
     saveState();
     renderPhases();
   };
-  document.getElementById("searchInput").oninput = applySearch;
+  let searchFrame = 0;
+  document.getElementById("searchInput").oninput = () => {
+    cancelAnimationFrame(searchFrame);
+    searchFrame = requestAnimationFrame(applySearch);
+  };
   document.getElementById("addNoaiBtn").onclick = () => {
     const m = Number(document.getElementById("noaiMinutes").value);
     if (!Number.isFinite(m) || m <= 0) {
@@ -1354,9 +1364,13 @@ export function createApplication() {
     drag = false;
     bw.classList.remove("dragging");
   });
+  let dragFrame = 0;
   window.addEventListener("mousemove", (e) => {
-    if (drag) bw.scrollLeft = startScroll - (e.pageX - startX);
-  });
+    if (!drag) return;
+    const left = startScroll - (e.pageX - startX);
+    cancelAnimationFrame(dragFrame);
+    dragFrame = requestAnimationFrame(() => { if (drag) bw.scrollLeft = left; });
+  }, { passive: true });
   const sections = [...document.querySelectorAll("section[id]")],
     navLinks = [...document.querySelectorAll(".nav a")];
   const obs = new IntersectionObserver(
@@ -1376,7 +1390,7 @@ export function createApplication() {
   );
   sections.forEach((s) => obs.observe(s));
   function labelControls() {
-    document.querySelectorAll("input,textarea,select").forEach((el) => {
+    document.querySelectorAll("input:not([aria-label]),textarea:not([aria-label]),select:not([aria-label])").forEach((el) => {
       if (el.hasAttribute("aria-label") || el.labels?.length) return;
       const row = el.closest(".mastery-row,.today-row,.coverage-row,.phase");
       el.setAttribute(
@@ -1396,7 +1410,7 @@ export function createApplication() {
           "Отметить выполнение",
       );
     });
-    document.querySelectorAll("button").forEach((el) => {
+    document.querySelectorAll("button:not([aria-label])").forEach((el) => {
       if (!el.hasAttribute("aria-label"))
         el.setAttribute(
           "aria-label",
@@ -1443,6 +1457,26 @@ export function createApplication() {
     applySearch();
     labelControls();
   });
+  // Dependencies are serialized because edits may mutate nested objects in place.
+  function renderWhenChanged(render, select) {
+    let previous;
+    return (...args) => {
+      const next = JSON.stringify(select());
+      if (next === previous) return;
+      const result = render(...args);
+      previous = JSON.stringify(select());
+      return result;
+    };
+  }
+  renderToday = renderWhenChanged(renderToday, () => state.today);
+  renderNoai = renderWhenChanged(renderNoai, () => state.noai);
+  renderMistakes = renderWhenChanged(renderMistakes, () => state.mistakes);
+  renderActivity = renderWhenChanged(renderActivity, () => state.activity.slice(0, 20));
+  renderCareer = renderWhenChanged(renderCareer, () => [state.career, state.careerMeta]);
+  renderVacancies = renderWhenChanged(renderVacancies, () => state.vacancies);
+  renderBranches = renderWhenChanged(renderBranches, () => [state.market, state.aqa]);
+  renderSnapshots = renderWhenChanged(renderSnapshots, () => localStorage.getItem(SNAPSHOT_KEY));
+  renderAutoBackup = renderWhenChanged(renderAutoBackup, () => localStorage.getItem(AUTO_BACKUP_KEY));
   document.getElementById("downloadRawBtn").onclick = () => {
     try {
       downloadJSON(

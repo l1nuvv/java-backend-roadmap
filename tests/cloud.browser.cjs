@@ -151,7 +151,16 @@ async function main() {
       if (!opened) await page.locator("#cloudClose").click();
     }
     const a = await device();
+    const unchangedCard = await a.locator("#phase-p1").elementHandle();
+    const unchangedToday = await a.locator("#todayRows").evaluateHandle(el => el.firstElementChild);
     await a.locator('[data-setup="p0:m:0"]').check();
+    assert.equal(await unchangedCard.evaluate(el => el === document.getElementById("phase-p1")), true);
+    assert.equal(await unchangedToday.evaluate(el => el === document.getElementById("todayRows").firstElementChild), true);
+    assert.equal(await a.locator("#miniMap button").count(), 13);
+    await a.locator("#searchInput").fill("Maven");
+    await a.waitForFunction(() => document.querySelectorAll(".phase.hidden-by-search").length > 0);
+    await a.locator("#searchInput").fill("");
+    await a.waitForFunction(() => document.querySelectorAll(".phase.hidden-by-search").length === 0);
     await login(a);
     await idle(a);
     assert.equal(cloud.get(session.user.id).payload.mastery["p0:m:0"], 3);
