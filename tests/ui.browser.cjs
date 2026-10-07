@@ -178,7 +178,12 @@ const path = require('node:path');
       for (const theme of ['dark', 'light']) {
         if (await page.locator('html').getAttribute('data-theme') !== theme) await page.locator('#themeBtn').click();
         await page.evaluate(() => window.scrollTo(0, 0));
-        assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth), 'overflow ' + width);
+        const overflow = await page.evaluate(() => {
+          const limit=document.documentElement.clientWidth;
+          if(document.documentElement.scrollWidth<=limit)return null;
+          return {document:document.documentElement.scrollWidth,limit,elements:[...document.querySelectorAll('body *')].map(el=>({tag:el.tagName,id:el.id,class:el.className?.baseVal??el.className,box:el.getBoundingClientRect().toJSON()})).filter(el=>el.box.width&&el.box.right>limit+1).slice(0,30)};
+        });
+        assert.equal(overflow,null,'overflow '+width+': '+JSON.stringify(overflow));
         await page.screenshot({ path: path.join(output, `dashboard-${width}-${theme}.png`) });
       }
       if (width <= 880) {
