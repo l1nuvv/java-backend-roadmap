@@ -2245,6 +2245,11 @@ html[data-design=session][data-theme=dark] .product-header {
   }
 }
 @media (max-width: 880px) {
+  .primary-navigation {
+    min-width: 0;
+    max-width: 100%;
+    contain: paint;
+  }
   [data-design=session] .product-header {
     padding: 10px 18px;
   }

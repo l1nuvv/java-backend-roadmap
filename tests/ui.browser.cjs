@@ -181,12 +181,18 @@ const path = require('node:path');
         const overflow = await page.evaluate(() => {
           const limit=document.documentElement.clientWidth;
           if(document.documentElement.scrollWidth<=limit)return null;
-          return {document:document.documentElement.scrollWidth,limit,elements:[...document.querySelectorAll('body *')].map(el=>({tag:el.tagName,id:el.id,class:el.className?.baseVal??el.className,box:el.getBoundingClientRect().toJSON()})).filter(el=>el.box.width&&el.box.right>limit+1).slice(0,30)};
+          return {document:document.documentElement.scrollWidth,limit,elements:[...document.querySelectorAll('body *')].map(el=>({tag:el.tagName,id:el.id,class:el.className?.baseVal??el.className,box:el.getBoundingClientRect().toJSON()})).filter(el=>el.box.width&&el.box.right>limit+1).slice(0,30),navigation:['.product-header','.primary-navigation'].map(selector=>{const el=document.querySelector(selector),css=getComputedStyle(el);return {selector,box:el.getBoundingClientRect().toJSON(),scroll:el.scrollWidth,client:el.clientWidth,overflow:css.overflow,contain:css.contain};})};
         });
         assert.equal(overflow,null,'overflow '+width+': '+JSON.stringify(overflow));
         await page.screenshot({ path: path.join(output, `dashboard-${width}-${theme}.png`) });
       }
       if (width <= 880) {
+        // The last primary link remains reachable in its own scrolling container.
+        const lastLink=page.locator('.primary-navigation a').last();
+        await lastLink.focus();
+        const link=await lastLink.boundingBox(),nav=await page.locator('.primary-navigation').boundingBox();
+        assert.ok(link.x>=nav.x-1 && link.x+link.width<=nav.x+nav.width+1,'primary navigation scrolls to focused link');
+        assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth),'focused navigation stays within page');
         await page.locator('.sections-menu summary').click();
         assert.ok((await page.locator('.nav a').first().boundingBox()).height >= 44);
         await page.keyboard.press('Escape');
