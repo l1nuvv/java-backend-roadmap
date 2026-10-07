@@ -81,8 +81,8 @@ html[data-design=session][data-theme=dark] .product-header{background:#171513;co
 @media(max-width:560px){.program-progress-label{flex-wrap:wrap;gap:5px 10px}.program-progress-label>span:last-child{flex-basis:100%;margin-left:0;font-size:10px}.session-program-progress{margin-bottom:18px}.session-phase-progress{gap:14px;margin-top:16px}.phase-progress-label{flex-wrap:wrap;gap:4px}.phase-progress-label>strong{flex-basis:100%}.session-program-progress progress,.session-phase-progress progress{height:10px}}
 
 @media(max-width:880px){
- /* Keep navigation scrolling inside its own line, including Chromium headless. */
- .primary-navigation{min-width:0;max-width:100%;contain:paint}
+ .primary-navigation{min-width:0;max-width:100%}
+ .stat .k{overflow-wrap:anywhere}
  [data-design=session] .product-header{padding:10px 18px}
  [data-design=session] .topbar{padding:6px 18px}
  [data-design=session] .phase .practice-row{min-height:44px}

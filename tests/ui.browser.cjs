@@ -175,6 +175,12 @@ const path = require('node:path');
     for (const [width, height] of [[360, 800], [390, 844], [430, 932], [768, 1024], [1440, 900], [1920, 1080]]) {
       await page.setViewportSize({ width, height });
       await screen('overview');
+      if(width===360){
+        // Longer fallback glyphs must wrap inside the compact metric columns.
+        const fallback=await page.addStyleTag({content:'.stat .k {font-family:monospace;font-size:12px}'});
+        assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth),'metric labels fit with wider fallback glyphs');
+        await fallback.evaluate(el=>el.remove());
+      }
       for (const theme of ['dark', 'light']) {
         if (await page.locator('html').getAttribute('data-theme') !== theme) await page.locator('#themeBtn').click();
         await page.evaluate(() => window.scrollTo(0, 0));
