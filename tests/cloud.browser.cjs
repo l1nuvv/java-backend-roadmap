@@ -42,14 +42,15 @@ async function main() {
     res.end(fs.readFileSync(file));
   });
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
-  const browser = await chromium.launch({
-    executablePath: process.env.ROADMAP_BROWSER_PATH || undefined,
-    headless: true,
-  });
+  let browser;
   try {
+    browser = await chromium.launch({
+      executablePath: process.env.ROADMAP_BROWSER_PATH || undefined,
+      headless: true,
+    });
     const contexts = [];
-    async function device() {
-      const context = await browser.newContext(),
+    async function device(fragment = '') {
+      const context = await browser.newContext({ reducedMotion: "reduce" }),
         page = await context.newPage();
       contexts.push(context);
       page.on("pageerror", (e) => errors.push(e.message));
@@ -108,7 +109,7 @@ async function main() {
           await route.fulfill({ status: 200, json: body });
         },
       );
-      await page.goto("http://127.0.0.1:" + server.address().port);
+      await page.goto("http://127.0.0.1:" + server.address().port + fragment);
       await page.waitForFunction(() => !document.getElementById("startup"));
       return page;
     }
@@ -135,6 +136,13 @@ async function main() {
       );
     }
     async function change(page, key, value) {
+      const id = key.split(':')[0];
+      if (!(await page.locator('#phase-'+id).evaluate(el=>el.classList.contains('selected-phase')))) {
+        await page.locator('.session-phases [data-open-phase="'+id+'"]').click();
+      }
+      if ((await page.locator('#phase-'+id).getAttribute('data-step')) !== 'topics') {
+        await page.locator('#phase-'+id+' [data-step="topics"]').click();
+      }
       await page
         .locator('[data-mastery="' + key + '"]')
         .selectOption(String(value));
@@ -220,6 +228,15 @@ async function main() {
       4,
     );
     await b.locator("#cloudBtn").click();
+    const screenshots = path.resolve(__dirname, "../test-results/cloud");
+    fs.mkdirSync(screenshots, { recursive: true });
+    for (const width of [390, 1440]) {
+      await b.setViewportSize({ width, height: 900 });
+      for (const theme of ["dark", "light"]) {
+        await b.evaluate(value => document.documentElement.dataset.theme = value, theme);
+        await b.screenshot({ path: path.join(screenshots, `conflict-${width}-${theme}.png`) });
+      }
+    }
     await b.locator("#cloudUseRemote").click();
     await idle(b);
     assert.equal(
@@ -277,6 +294,11 @@ async function main() {
     await a.waitForFunction(() => !document.getElementById("startup"));
     await idle(a);
     assert.ok(refreshes > 0);
+    // Auth callback fragments must be removed while the Session screen remains usable.
+    const callback = await device('/#access_token=test-access&refresh_token=test-refresh&expires_in=3600');
+    await callback.waitForFunction(()=>!location.hash && !document.getElementById('startup'));
+    assert.equal(await callback.locator('#roadmap.active-screen').isVisible(),true);
+    assert.equal(await callback.locator('.session-program-progress').isVisible(),true);
     for (const width of [360, 390, 768, 1440]) {
       await a.setViewportSize({ width, height: 900 });
       await a.locator("#cloudBtn").click();
@@ -305,7 +327,6 @@ async function main() {
             "Reload keeps progress and auth",
             "Expired session refresh",
             "Mobile dialog without overflow",
-            "Deletion and list conflict handling",
             "No runtime errors",
           ],
           races,
@@ -316,7 +337,7 @@ async function main() {
       ),
     );
   } finally {
-    await browser.close();
+    if (browser) await browser.close();
     await new Promise((r) => server.close(r));
   }
 }

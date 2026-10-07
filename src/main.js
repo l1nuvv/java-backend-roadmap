@@ -1,9 +1,13 @@
 import "./styles.css";
+import "./ui/learning.css";
+import "./ui/production.css";
 import { createApplication } from "./app.js";
+import { mount } from "./ui/learning-interface.js";
 import { mountCloud } from "./cloud/controller.js";
 try {
   const app = createApplication();
   document.getElementById("startup").remove();
+  mount(app, { preview: false });
   try {
     mountCloud(app);
   } catch {

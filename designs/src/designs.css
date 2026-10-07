@@ -1,0 +1,2 @@
+/* Shared layouts; preview builds resolve this import locally. */
+@import "../../src/ui/learning.css";

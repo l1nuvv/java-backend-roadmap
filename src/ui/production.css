@@ -1,0 +1,16 @@
+/* Production has no fixed preview banner; retain the approved Session density. */
+html.production-session body { padding-top: 0; }
+.production-session .app { min-height: 100vh; }
+.production-session .topbar { top: 0; }
+.production-session .session-context { top: 74px; }
+.production-session .utility-items { z-index: 75; }
+.production-session #storageWarning { margin: 10px 24px; }
+@media (max-width: 880px) {
+  .production-session .topbar { position: relative; }
+}
+@media (max-width: 560px) {
+  .production-session .sections-menu .nav {
+    top: 62px;
+    max-height: calc(100dvh - 82px);
+  }
+}

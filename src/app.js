@@ -63,6 +63,7 @@ export function createApplication() {
   let storageError = "",
     loadBlocked = false,
     lastBackupAt = 0,
+    lastStorageRaw = null,
     persistTimer = null;
   const model = createProgressModel(() => state);
   const {
@@ -91,6 +92,7 @@ export function createApplication() {
   function loadState() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
+      lastStorageRaw = raw;
       return raw ? migrate(JSON.parse(raw)) : clone(defaultState);
     } catch (e) {
       loadBlocked = true;
@@ -101,9 +103,14 @@ export function createApplication() {
   }
   function persistLight() {
     clearTimeout(persistTimer);
-    persistTimer = setTimeout(() => writeState(), 250);
+    persistTimer = setTimeout(() => {
+      persistTimer = null;
+      writeState();
+    }, 250);
   }
   function writeState(candidate = state, replace = false) {
+    clearTimeout(persistTimer);
+    persistTimer = null;
     if (loadBlocked && !replace) {
       showStorage();
       return false;
@@ -112,6 +119,13 @@ export function createApplication() {
     try {
       validateImport(next);
       const previous = localStorage.getItem(STORAGE_KEY);
+      if (!replace && previous !== lastStorageRaw) {
+        loadBlocked = true;
+        storageError =
+          "Другая вкладка изменила прогресс. Запись не перезаписана. Экспортируй несохранённые изменения этой вкладки в JSON, затем обнови страницу. Для замены записи используй импорт с подтверждением.";
+        showStorage();
+        return false;
+      }
       if (
         previous &&
         (replace || candidate !== state || Date.now() - lastBackupAt > 10000)
@@ -127,7 +141,9 @@ export function createApplication() {
         localStorage.setItem(AUTO_BACKUP_KEY, JSON.stringify(backup));
         lastBackupAt = Date.now();
       }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      const serialized = JSON.stringify(next);
+      localStorage.setItem(STORAGE_KEY, serialized);
+      lastStorageRaw = serialized;
       state = next;
       storageError = "";
       loadBlocked = false;
@@ -247,9 +263,12 @@ export function createApplication() {
         collapsed = !!state.phaseCollapsed[p.id],
         k = Math.round(phaseKnowledge(p) * 100),
         pr = Math.round(phasePractice(p) * 100);
-      const signature = JSON.stringify([eff, collapsed, state.checkpoint[p.id], state.evidence[p.id], p.topics.map((_, i) => state.mastery[p.id + ":m:" + i]), p.practice.map((_, i) => state.practice[p.id + ":p:" + i]), checkpointValid(p.id)]);
+      const signature = JSON.stringify([eff, collapsed, state.checkpoint[p.id], p.topics.map((_, i) => state.mastery[p.id + ":m:" + i]), p.practice.map((_, i) => state.practice[p.id + ":p:" + i]), checkpointValid(p.id)]);
       const oldCard = existing.get("phase-" + p.id);
-      if (oldCard?.dataset.renderSignature === signature) return;
+      // Typing evidence already updates this textarea. Retain its neighbouring
+      // buttons on blur so a click is not lost to a needless card replacement.
+      if (oldCard?.dataset.renderSignature === signature &&
+          oldCard.querySelector('[data-evidence]')?.value === (state.evidence[p.id] || '')) return;
       const card = document.createElement("article");
       card.dataset.renderSignature = signature;
       card.id = `phase-${p.id}`;
@@ -266,6 +285,12 @@ export function createApplication() {
         p.checkpoint
       ).toLowerCase();
       card.innerHTML = `<div class="phase-head"><div class="phase-top"><div><div class="phase-num">${p.num} · ${p.cat}</div><h3>${esc(p.title)}</h3><div class="phase-time">${hoursForPhase(p)} ч · deps: ${p.deps.length ? p.deps.join(", ") : "нет"}</div></div><div class="phase-controls"><select class="status-select" data-phase-status="${p.id}" ${eff === "locked" || eff === "done" ? "disabled" : ""}><option value="not" ${(state.phaseStatus[p.id] || "not") === "not" ? "selected" : ""}>Не начато</option><option value="doing" ${eff === "doing" ? "selected" : ""}>В процессе</option>${eff === "done" ? '<option value="done" selected>Готово</option>' : ""}</select><button class="icon-btn" data-collapse="${p.id}">${collapsed ? "＋" : "−"}</button></div></div></div><div class="phase-body">${renderTopics(p)}<div class="label-sm">Проверенная самостоятельная практика</div><p class="muted" style="font-size:11px">Отмечай после своего выполнения и проверки результата.</p>${p.practice.map((x, i) => `<label class="practice-row"><input type="checkbox" data-practice="${p.id}:p:${i}" ${state.practice[`${p.id}:p:${i}`] ? "checked" : ""}><span>${esc(x)}</span></label>`).join("")}<div class="progress-pair"><div class="tiny-progress"><div class="mini-progress"><span>${p.id === "p0" ? "Подготовка" : p.id === "p11" || p.id === "p12" ? "Действия" : "Освоение"}</span><b>${k}%</b></div><div class="bar"><span style="width:${k}%"></span></div></div><div class="tiny-progress"><div class="mini-progress"><span>Practice</span><b>${pr}%</b></div><div class="bar"><span style="width:${pr}%"></span></div></div></div><div class="checkpoint"><b>Checkpoint:</b> ${esc(p.checkpoint)}${state.checkpoint[p.id]?.passed && !checkpointValid(p.id) ? '<p class="gate-warning">Сохранённый pass требует перепроверки: tasks, evidence, mastery/practice или dependencies неполны. Исходная отметка сохранена.</p>' : ""}<div class="checkpoint-actions"><button class="btn primary" data-checkpoint="${p.id}">${state.checkpoint[p.id]?.passed ? "Пройден · открыть" : "Проверить готовность"}</button>${eff === "locked" ? `<span class="badge">Locked: ${p.deps.join(", ")}</span>` : ""}</div></div><div class="evidence"><div class="label-sm">Evidence</div><textarea data-evidence="${p.id}" placeholder="commit / PR / файл / задача / что сделал сам">${esc(state.evidence[p.id] || "")}</textarea></div><div class="ai-note">${esc(p.ai)}</div></div>`;
+      const heading = card.querySelector("h3"), disclosure = card.querySelector("[data-collapse]"), body = card.querySelector(".phase-body");
+      heading.tabIndex = -1;
+      body.id = card.id + "-body";
+      disclosure.setAttribute("aria-controls", body.id);
+      disclosure.setAttribute("aria-expanded", String(!collapsed));
+      disclosure.setAttribute("aria-label", "Свернуть или раскрыть: " + p.title);
       bindPhaseControls(card);
       if (oldCard) oldCard.replaceWith(card);
       else board.appendChild(card);
@@ -940,11 +965,14 @@ export function createApplication() {
     document.getElementById("categoryFilter").value = "all";
     state.phaseCollapsed[n.id] = false;
     renderPhases();
-    document.getElementById(`phase-${n.id}`)?.scrollIntoView({
+    window.dispatchEvent(new CustomEvent("roadmap:current", { detail: { id: n.id } }));
+    const card = document.getElementById(`phase-${n.id}`);
+    card?.scrollIntoView({
       behavior: motionBehavior(),
       inline: "center",
       block: "nearest",
     });
+    card?.querySelector("h3")?.focus({ preventScroll: true });
   }
   let timerDeadline = 0;
   let modalReturnFocus = null;
@@ -1095,6 +1123,7 @@ export function createApplication() {
     saveState();
   };
   document.getElementById("scrollCurrentBtn").onclick = scrollCurrent;
+  document.getElementById("nextActionBtn").onclick = scrollCurrent;
   document.getElementById("collapseAllBtn").onclick = () => {
     const all = phases.every((p) => state.phaseCollapsed[p.id]);
     phases.forEach((p) => (state.phaseCollapsed[p.id] = !all));
@@ -1272,7 +1301,7 @@ export function createApplication() {
   });
   document.querySelectorAll(".nav a").forEach((a) =>
     a.addEventListener("click", () => {
-      if (window.innerWidth <= 880) setSidebarOpen(false);
+      if (window.innerWidth <= 880 && !document.documentElement.dataset.design) setSidebarOpen(false);
     }),
   );
   document.addEventListener("keydown", (e) => {
@@ -1299,8 +1328,13 @@ export function createApplication() {
       return;
     }
     if (e.key === "Escape") {
-      setSidebarOpen(false);
-      closeModals();
+      const menu = document.querySelector(".utility-menu[open]");
+      if (menu) {
+        menu.open = false;
+        menu.querySelector("summary").focus();
+      } else if (document.getElementById("sidebar").classList.contains("open")) {
+        setSidebarOpen(false);
+      }
       return;
     }
     if (document.getElementById("sidebar").classList.contains("open")) {
@@ -1379,12 +1413,14 @@ export function createApplication() {
         .filter((e) => e.isIntersecting)
         .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
       if (!v) return;
-      navLinks.forEach((a) =>
-        a.classList.toggle(
-          "active",
-          a.getAttribute("href") === "#" + v.target.id,
-        ),
-      );
+      navLinks.forEach((a) => {
+        const active = a.getAttribute("href") === "#" + v.target.id;
+        a.classList.toggle("active", active);
+        if (!document.documentElement.dataset.design) {
+          if (active) a.setAttribute("aria-current", "location");
+          else a.removeAttribute("aria-current");
+        }
+      });
     },
     { rootMargin: "-20% 0px -65% 0px", threshold: [0, 0.1, 0.3, 0.6] },
   );
@@ -1395,9 +1431,8 @@ export function createApplication() {
       const row = el.closest(".mastery-row,.today-row,.coverage-row,.phase");
       el.setAttribute(
         "aria-label",
-        el.placeholder ||
-          el.title ||
-          row?.querySelector("span,h3")?.textContent ||
+        row?.querySelector("span,h3")?.textContent ||
+          el.placeholder ||
           {
             statusFilter: "Фильтр статуса",
             categoryFilter: "Фильтр категории",
@@ -1418,7 +1453,7 @@ export function createApplication() {
         );
     });
     document
-      .querySelectorAll(".icon-btn,.mini-node")
+      .querySelectorAll(".mini-node")
       .forEach((el) =>
         el.setAttribute("aria-label", el.title || "Свернуть или раскрыть фазу"),
       );
@@ -1494,6 +1529,11 @@ export function createApplication() {
     }
   };
   newDrill();
+  document.addEventListener("click", (e) => {
+    const menu = document.querySelector(".utility-menu[open]");
+    if (menu && (!menu.contains(e.target) || e.target.closest(".utility-items button")))
+      menu.open = false;
+  });
   fullRender();
   document
     .getElementById("printBtn")
