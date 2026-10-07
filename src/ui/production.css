@@ -9,6 +9,17 @@ html.production-session body { padding-top: 0; }
   .production-session .topbar { position: relative; }
 }
 @media (max-width: 560px) {
+  .production-session .search {
+    flex: 1 1 100%;
+    min-width: 0;
+    order: 1;
+  }
+  .production-session .top-actions {
+    order: 2;
+    margin-left: 0;
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
   .production-session .sections-menu .nav {
     top: 62px;
     max-height: calc(100dvh - 82px);

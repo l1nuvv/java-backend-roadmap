@@ -20,7 +20,7 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: git diff --exit-code -- docs
-      - run: npm exec playwright install --with-deps chromium
+      - run: npm exec -- playwright install --with-deps chromium
       - run: node tests/ui.browser.cjs
       - run: node tests/cloud.browser.cjs
       - run: npm run test:designs
